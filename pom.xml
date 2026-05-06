@@ -114,12 +114,14 @@
                             <multi>
                                 <!-- Machine-readable representation -->
                                 <preamble>SPDX-License-Identifier: MIT</preamble>
-                                <header>LICENSE</header>
+                                <header>license-header.txt</header>
                             </multi>
                             <excludes>
                                 <exclude>src/test/resources/**</exclude>
                                 <exclude>src/main/resources/**</exclude>
                                 <exclude>.java-version</exclude>
+                                <exclude>pom.xml</exclude>
+                                <exclude>checkstyle.xml</exclude>
                             </excludes>
                         </licenseSet>
                     </licenseSets>

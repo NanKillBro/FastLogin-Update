@@ -56,17 +56,20 @@ public class GeyserService extends BedrockService<GeyserSession> {
                 config = invokeOptionalMethod(geyserImpl, "config");
             }
 
+            AuthType fromConfig = resolveAuthTypeFromObject(config);
+            if (fromConfig != null) {
+                return fromConfig;
+            }
+
             if (config != null) {
                 Object remote = invokeOptionalMethod(config, "getRemote");
                 if (remote == null) {
                     remote = invokeOptionalMethod(config, "remote");
                 }
 
-                if (remote != null) {
-                    Object resolvedAuthType = invokeOptionalMethod(remote, "authType");
-                    if (resolvedAuthType instanceof AuthType) {
-                        return (AuthType) resolvedAuthType;
-                    }
+                AuthType fromRemote = resolveAuthTypeFromObject(remote);
+                if (fromRemote != null) {
+                    return fromRemote;
                 }
             }
         } catch (ReflectiveOperationException reflectiveOperationException) {
@@ -80,6 +83,56 @@ public class GeyserService extends BedrockService<GeyserSession> {
                 "Could not resolve Geyser auth type from installed Geyser version; using OFFLINE behavior"
         );
         return AuthType.OFFLINE;
+    }
+
+    private AuthType resolveAuthTypeFromObject(Object source) throws ReflectiveOperationException {
+        if (source == null) {
+            return null;
+        }
+
+        Object resolved = invokeOptionalMethod(source, "getAuthType");
+        if (resolved == null) {
+            resolved = invokeOptionalMethod(source, "authType");
+        }
+        if (resolved == null) {
+            resolved = readOptionalField(source, "authType");
+        }
+
+        if (resolved instanceof AuthType) {
+            return (AuthType) resolved;
+        }
+
+        if (resolved instanceof String) {
+            return parseAuthType((String) resolved);
+        }
+
+        if (resolved != null) {
+            return parseAuthType(resolved.toString());
+        }
+
+        return null;
+    }
+
+    private AuthType parseAuthType(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        try {
+            return AuthType.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private Object readOptionalField(Object target, String fieldName) {
+        try {
+            java.lang.reflect.Field field = target.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.get(target);
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {
+            return null;
+        }
     }
 
     private Object invokeOptionalMethod(Object target, String methodName) throws ReflectiveOperationException {

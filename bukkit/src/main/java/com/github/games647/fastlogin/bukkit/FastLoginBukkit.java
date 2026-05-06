@@ -152,6 +152,14 @@ public class FastLoginBukkit extends JavaPlugin implements PlatformPlugin<Comman
     }
 
     private boolean initializeFloodgate() {
+        if (getServer().getPluginManager().getPlugin("floodgate") != null) {
+            floodgateService = new FloodgateService(FloodgateApi.getInstance(), core);
+
+            // Check Floodgate config values and return
+            return floodgateService.isValidFloodgateConfigString("autoLoginFloodgate")
+                    && floodgateService.isValidFloodgateConfigString("allowFloodgateNameConflict");
+        }
+
         if (getServer().getPluginManager().getPlugin("Geyser-Spigot") != null) {
             try {
                 geyserService = new GeyserService(GeyserImpl.getInstance(), core);
@@ -161,13 +169,6 @@ public class FastLoginBukkit extends JavaPlugin implements PlatformPlugin<Comman
             }
         }
 
-        if (getServer().getPluginManager().getPlugin("floodgate") != null) {
-            floodgateService = new FloodgateService(FloodgateApi.getInstance(), core);
-
-            // Check Floodgate config values and return
-            return floodgateService.isValidFloodgateConfigString("autoLoginFloodgate")
-                    && floodgateService.isValidFloodgateConfigString("allowFloodgateNameConflict");
-        }
 
         return true;
     }

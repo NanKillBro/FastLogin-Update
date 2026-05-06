@@ -81,13 +81,18 @@ public class FloodgateService extends BedrockService<FloodgatePlayer> {
     public boolean performChecks(String username, LoginSource source) {
         // check if the Bedrock player is linked to a Java account
         FloodgatePlayer floodgatePlayer = getBedrockPlayer(username);
+        if (floodgatePlayer == null) {
+            return false;
+        }
+
         boolean isLinked = floodgatePlayer.getLinkedPlayer() != null;
+        String conflictName = stripPrefix(username, floodgate.getPlayerPrefix());
 
         if ("false".equals(allowConflict)
             || "linked".equals(allowConflict) && !isLinked) {
-            super.checkNameConflict(username, source);
+            super.checkNameConflict(conflictName, source);
         } else {
-            core.getPlugin().getLog().info("Skipping name conflict checking for player {}", username);
+            core.getPlugin().getLog().info("Skipping name conflict checking for player {}", conflictName);
         }
 
         //Floodgate users don't need Java specific checks
@@ -103,8 +108,14 @@ public class FloodgateService extends BedrockService<FloodgatePlayer> {
      * @return FloodgatePlayer if found, null otherwise
      */
     public FloodgatePlayer getBedrockPlayer(String prefixedUsername) {
+        String prefix = floodgate.getPlayerPrefix();
+        String normalizedInput = stripPrefix(prefixedUsername, prefix);
+
         for (FloodgatePlayer floodgatePlayer : floodgate.getPlayers()) {
-            if (floodgatePlayer.getCorrectUsername().equals(prefixedUsername)) {
+            String correctUsername = floodgatePlayer.getCorrectUsername();
+            String normalizedCorrect = stripPrefix(correctUsername, prefix);
+
+            if (matchesUsername(prefixedUsername, normalizedInput, correctUsername, normalizedCorrect, prefix)) {
                 return floodgatePlayer;
             }
         }
@@ -122,5 +133,39 @@ public class FloodgateService extends BedrockService<FloodgatePlayer> {
 
     public boolean isBedrockConnection(String username) {
         return getBedrockPlayer(username) != null;
+    }
+
+    private String stripPrefix(String username, String prefix) {
+        if (prefix != null && !prefix.isEmpty() && username != null && username.startsWith(prefix)) {
+            return username.substring(prefix.length());
+        }
+        return username;
+    }
+
+    private boolean matchesUsername(
+            String inputUsername,
+            String normalizedInput,
+            String correctUsername,
+            String normalizedCorrect,
+            String prefix
+    ) {
+        if (inputUsername == null || correctUsername == null) {
+            return false;
+        }
+
+        if (correctUsername.equalsIgnoreCase(inputUsername)
+                || normalizedCorrect.equalsIgnoreCase(inputUsername)
+                || correctUsername.equalsIgnoreCase(normalizedInput)
+                || normalizedCorrect.equalsIgnoreCase(normalizedInput)) {
+            return true;
+        }
+
+        if (prefix != null && !prefix.isEmpty()) {
+            String prefixedInput = prefix + normalizedInput;
+            return correctUsername.equalsIgnoreCase(prefixedInput)
+                    || normalizedCorrect.equalsIgnoreCase(prefixedInput);
+        }
+
+        return false;
     }
 }
