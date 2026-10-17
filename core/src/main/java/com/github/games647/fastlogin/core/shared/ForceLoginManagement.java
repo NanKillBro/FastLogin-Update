@@ -80,8 +80,15 @@ public abstract class ForceLoginManagement<P extends C, C, L extends LoginSessio
                     if (success) {
                         //update only on success to prevent corrupt data
                         if (playerProfile != null) {
-                            playerProfile.setId(session.getUuid());
-                            playerProfile.setOnlinemodePreferred(true);
+                            // Only Mojang-verified logins (which provide the online UUID) may switch the
+                            // account to online mode. Floodgate/Bedrock sessions never have an online UUID,
+                            // so they must not mark a (linked) Java account as premium - that would force
+                            // premium login for a possibly cracked Java account on its next Java join.
+                            if (session.getUuid() != null) {
+                                playerProfile.setId(session.getUuid());
+                                playerProfile.setOnlinemodePreferred(true);
+                            }
+
                             storage.save(playerProfile);
                         }
 
